@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ماشین حساب ۱۹۴ الگوی ریاضی</title>
+<style>
+  * { box-sizing: border-box; font-family: Tahoma, sans-serif; }
+  body { background:#0f172a; color:#e2e8f0; margin:0; padding:15px; }
+  h1 { text-align:center; font-size:18px; color:#38bdf8; margin-bottom:15px; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .search { width:100%; padding:10px; border-radius:8px; border:1px solid #334155;
+            background:#1e293b; color:#e2e8f0; font-size:14px; margin-bottom:10px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .item { background:#1e293b; padding:10px 6px; border-radius:9px; text-align:center;
+          font-size:12px; cursor:pointer; border:1px solid #334155;
+          transition:.15s; color:#cbd5e1; }
+  .item:hover, .item:active { background:#0ea5e9; color:white; transform:scale(1.03); }
+  .card { background:#1e293b; border-radius:12px; padding:15px; margin-bottom:15px; }
+  label { display:block; margin:8px 0 4px; font-size:13px; color:#94a3b8; }
+  input { width:100%; padding:10px; border-radius:8px; border:1px solid #334155;
+          background:#0f172a; color:#e2e8f0; font-size:15px; }
+  button { width:100%; padding:12px; margin-top:12px; border:none; border-radius:8px;
+           background:linear-gradient(90deg,#0ea5e9,#6366f1); color:white;
+           font-size:15px; font-weight:bold; cursor:pointer; }
+  button:active { transform:scale(.98); }
+  .back { background:linear-gradient(90deg,#64748b,#475569); margin-top:0; margin-bottom:15px; }
+  .toggle-btn { background:linear-gradient(90deg,#f59e0b,#ea580c); margin:0; }
+  #output { margin-top:12px; background:#0b1220; padding:12px; border-radius:8px;
+            min-height:60px; font-size:14px; line-height:2; word-break:break-word;
+            max-height:300px; overflow-y:auto; }
+  .big { font-size:19px; color:#38bdf8; font-weight:bold; }
+  .err { color:#f87171; }
+  .info { font-size:12px; color:#64748b; margin-top:6px; }
+  .collapsible { display:none; margin-top:10px; }
+  .collapsible.open { display:block; animation:fadeIn .25s ease; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(-5px);} to{opacity:1; transform:translateY(0);} }
+  .formula { background:#0b1220; border:1px dashed #0ea5e9; border-radius:10px;
+             padding:10px; margin-bottom:10px; font-family:'Courier New',monospace;
+             font-size:14px; color:#7dd3fc; text-align:center; direction:ltr;
+             line-height:1.7; }
+  .formula .title { color:#94a3b8; font-size:11px; font-family:Tahoma; direction:rtl;
+                    margin-bottom:4px; }
+  .live { background:#1e3a5f; border-radius:6px; padding:6px 10px; margin-top:6px;
+          font-size:12px; color:#e2e8f0; direction:rtl; font-family:Tahoma; }
+  .desc { background:#0b1220; border:1px solid #334155; border-right:4px solid #22c55e;
+          border-radius:8px; padding:10px; direction:rtl;
+          font-size:12.5px; line-height:1.85; color:#cbd5e1; }
+  .desc b { color:#4ade80; }
+  .desc .head { color:#22c55e; font-weight:bold; margin-bottom:5px; font-size:12px; }
+  
+  /* استایل فوتر جدید */
+  .footer {
+    margin-top: 30px; padding: 15px; background: #1e293b;
+    border-radius: 12px; border: 1px solid #334155;
+    text-align: center; font-size: 13px; line-height: 1.8;
+    color: #94a3b8; box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  }
+  .footer b { color: #38bdf8; }
+  .footer .team { color: #f59e0b; font-weight: bold; font-size: 14px; margin-top: 8px; display: block; }
+  .footer .dev { color: #22c55e; font-weight: bold; }
+  .footer .source { font-size: 12px; color: #64748b; margin-top: 6px; display: block; }
+</style>
+</head>
+<body>
+
+<div id="listPage" class="page active">
+  <h1>📚 فهرست الگوهای ریاضی</h1>
+  <input class="search" id="searchBox" placeholder="🔍 جستجوی الگو..." oninput="filterList()">
+  <div class="grid" id="listGrid"></div>
+</div>
+
+<div id="calcPage" class="page">
+  <button class="back" onclick="goBack()">⬅ بازگشت به فهرست</button>
+  <h1 id="calcTitle"></h1>
+  <div class="card">
+    <button class="toggle-btn" id="toggleBtn" onclick="toggleInfo()">ℹ️ اطلاعات بیشتر</button>
+    <div class="collapsible" id="infoBox">
+      <div class="formula" id="formulaBox"></div>
+      <div class="live" id="liveFormula"></div>
+      <div class="desc" id="descBox"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div id="params"></div>
+    <label>شماره جمله n</label>
+    <input type="number" id="nth" value="5" min="0" oninput="updateLive()">
+    <button onclick="calc()">محاسبه جمله n</button>
+    <div id="output">نتیجه اینجا نمایش داده می‌شود...</div>
+  </div>
+</div>
+
+<!-- فوتر اطلاعات سازندگان -->
+<div class="footer">
+  <div>
+    <b>جمع‌آوری اطلاعات:</b> علی مشیدی، محمد حسین صفایی، بهراد محمدی، محمد سبحان دانشپور
+  </div>
+  <div style="margin-top: 6px;">
+    <b>ساخت و تولید:</b> <span class="dev">مهدیار رضایی</span>
+  </div>
+  <div class="source">
+    <b>منابع:</b> هوش مصنوعی DeepSeek , ChatGPT
+  </div>
+  <span class="team">ارائه گروه قاتلان X</span>
+</div>
+
+<script>
+/* ========== توابع کمکی اصلی ========== */
+const fact = n => { if(n<0) return NaN; if(n>170) return Infinity; let r=1; for(let i=2;i<=n;i++) r*=i; return r; };
+const isPrime = n => { if(n<2) return false; for(let i=2;i*i<=n;i++) if(n%i===0) return false; return true; };
+const properSum = n => { let s=0; for(let i=1;i<n;i++) if(n%i===0) s+=i; return s; };
+const isPalindrome = n => { const s=String(n); return s===s.split('').reverse().join(''); };
+const isPerfect = n => n>1 && properSum(n)===n;
+const digitSum = n => String(n).split('').reduce((a,b)=>a+ +b,0);
+const primeFactors = n => { let f=[],x=n,d=2; while(d*d<=x){ while(x%d===0){f.push(d);x/=d;} d++; } if(x>1) f.push(x); return f; };
+
+/* ========== توابع شناسایی ========== */
+const isSmith = n => { if(isPrime(n)||n<4) return false; const f=primeFactors(n); if(f.length<2) return false; return digitSum(n)===f.reduce((a,p)=>a+digitSum(p),0); };
+const isKaprekar = n => { const sq=String(n*n); for(let i=1;i<sq.length;i++){ const a=parseInt(sq.slice(0,i))||0, b=parseInt(sq.slice(i))||0; if(a>0&&b>0&&a+b===n) return true; } return false; };
+const isArmstrong = n => { const s=String(n),p=s.length; let sum=0; for(const c of s) sum+=Math.pow(+c,p); return sum===n; };
+const isHarshad = n => n>0 && n%digitSum(n)===0;
+const isSelfDescriptive = n => { const s=String(n); for(let i=0;i<s.length;i++){ if(+s[i]!==s.split('').filter(c=>c===String(i)).length) return false; } return true; };
+
+/* ========== توابع nth ========== */
+function primeNth(n){let c=0,i=2;while(true){if(isPrime(i)){if(c===n)return i;c++;}i++;}}
+function compositeNth(n){let c=0,i=4;while(true){if(!isPrime(i)){if(c===n)return i;c++;}i++;}}
+function perfectNth(n){let c=0,i=2;while(true){if(isPerfect(i)){if(c===n)return i;c++;}i++;}}
+function mersenneNth(n){let c=0,k=1;while(true){let m=Math.pow(2,k)-1;if(isPrime(m)){if(c===n)return m;c++;}k++;}}
+function bellNth(n){let B=[1],T=[[1]];for(let i=1;i<=n;i++){if(i>50)return B[B.length-1];let row=[T[i-1][i-1]];for(let j=0;j<i;j++)row.push(row[j]+T[i-1][j]);T.push(row);B.push(row[0]);}return B[n];}
+function stirling2(n,k){if(n>50)return 'بزرگ';let S=[[1]];for(let i=1;i<=n;i++){S[i]=[0];for(let j=1;j<=i;j++)S[i][j]=(S[i-1][j-1]||0)+j*(S[i-1][j]||0);}return S[n][k];}
+function luckyNth(n){let L=[];for(let i=1;i<=Math.max(1000,n*30);i++)L.push(i);let step=1;while(step<L.length){let m=L[step];if(!m||m>L.length)break;L=L.filter((_,i)=>(i+1)%m!==0);step++;}return L[n-1]!==undefined?L[n-1]:'یافت نشد';}
+function amicableNth(n){let p=[];for(let a=2;a<=20000&&p.length<n;a++){let b=properSum(a);if(b>a&&properSum(b)===a)p.push('('+a+','+b+')');}return p[n-1]||'یافت نشد';}
+function twinPrimeNth(n){let c=0,i=3;while(true){if(isPrime(i)&&isPrime(i+2)){if(c===n)return '('+i+','+(i+2)+')';c++;}i++;}}
+function sophieNth(n){let c=0,i=2;while(true){if(isPrime(i)&&isPrime(2*i+1)){if(c===n)return i;c++;}i++;}}
+function fibAt(n){let a=0,b=1;for(let i=0;i<n;i++){[a,b]=[b,a+b];}return a;}
+
+/* ========== تعریف الگوها ========== */
+const patterns = {
+  /* ۱۰ الگوی اول */
+  "توان‌دار":{formula:"aₙ = n²",live:()=>"aₙ = n × n",desc:"مربع n. تفاضل: اعداد فرد.",fn:n=>n*n},
+  "لگاریتمی":{formula:"aₙ = ln(n)",live:()=>"aₙ = ln(n)",desc:"رشد آهسته.",fn:n=>n===0?0:+Math.log(n).toFixed(4)},
+  "نمایی":{params:[{id:'base',l:'پایه b',d:2}],formula:"aₙ = bⁿ",live:pr=>`aₙ = ${pr.base}ⁿ`,desc:"رشد نمایی.",fn:(n,pr)=>Math.pow(pr.base,n)},
+  "رادیکالی":{formula:"aₙ = √n",live:()=>"aₙ = √n",desc:"جذر n.",fn:n=>+Math.sqrt(n).toFixed(4)},
+  "مثلثاتی":{formula:"aₙ = sin(n)",live:()=>"aₙ = sin(n)",desc:"موج سینوسی.",fn:n=>+Math.sin(n).toFixed(4)},
+  "سینوسی":{formula:"aₙ = sin(n)",live:()=>"aₙ = sin(n)",desc:"نوسان.",fn:n=>+Math.sin(n).toFixed(4)},
+  "کسینوسی":{formula:"aₙ = cos(n)",live:()=>"aₙ = cos(n)",desc:"موج کسینوسی.",fn:n=>+Math.cos(n).toFixed(4)},
+  "تانژانتی":{formula:"aₙ = tan(n)",live:()=>"aₙ = tan(n)",desc:"تانژانت.",fn:n=>+Math.tan(n).toFixed(4)},
+  "قدرمطلق":{formula:"aₙ = |10·sin(n)−5|",live:()=>"aₙ = |10·sin(n)−5|",desc:"قدرمطلق.",fn:n=>+Math.abs(Math.sin(n)*10-5).toFixed(2)},
+  "علامت‌دار":{formula:"aₙ = sign(sin(n))",live:()=>"aₙ = sign(sin(n))",desc:"علامت.",fn:n=>Math.sign(Math.sin(n))},
+
+  /* ۱۰ الگوی دوم */
+  "دنباله بازگشتی خطی":{params:[{id:'a',l:'a',d:2},{id:'b',l:'b',d:1},{id:'x0',l:'x₀',d:0},{id:'x1',l:'x₁',d:1}],formula:"xₙ = a·xₙ₋₁ + b·xₙ₋₂",live:pr=>`${pr.a}·xₙ₋₁ + ${pr.b}·xₙ₋₂`,desc:"ترکیب خطی.",fn:(n,pr)=>{let s=[pr.x0,pr.x1];for(let i=2;i<=n;i++)s.push(pr.a*s[i-1]+pr.b*s[i-2]);return s[n];}},
+  "دنباله بازگشتی غیرخطی":{params:[{id:'x0',l:'x₀',d:2}],formula:"xₙ = xₙ₋₁² + 1",live:pr=>`xₙ₋₁²+1 | x₀=${pr.x0}`,desc:"رشد انفجاری.",fn:(n,pr)=>{let x=pr.x0;for(let i=1;i<=n;i++)x=x*x+1;return x;}},
+  "اعداد خودتوان":{formula:"a² ≡ a (mod 10)",live:()=>"a² mod 10 = a mod 10",desc:"۵، ۶، ۲۵...",fn:n=>(n*n)%10===n%10?n:null,type:'filter'},
+  "اعداد پالین‌دروم":{formula:"a = reverse(a)",live:()=>"عدد = معکوس",desc:"۱۲۱، ۱۳۳۱...",fn:n=>isPalindrome(n)?n:null,type:'filter'},
+  "اعداد خوش‌شانس":{formula:"غربال لاکی",live:()=>"Lucky(n)",desc:"غربال ویژه.",fn:n=>luckyNth(n),type:'nth'},
+  "اعداد دوستانه":{formula:"σ(a)−a = b",live:()=>"σ(a)−a=b",desc:"(۲۲۰،۲۸۴).",fn:n=>amicableNth(n),type:'nth'},
+  "اعداد مرسن":{formula:"Mₚ = 2ᵖ−1 (اول)",live:()=>"2ᵖ−1",desc:"۳، ۷، ۳۱...",fn:n=>mersenneNth(n),type:'nth'},
+  "اعداد فرما":{formula:"Fₙ = 2^(2ⁿ)+1",live:()=>"2^(2ⁿ)+1",desc:"۳، ۵، ۱۷...",fn:n=>Math.pow(2,Math.pow(2,n))+1},
+  "فیبوناچی تعمیم‌یافته":{params:[{id:'a',l:'a',d:1},{id:'b',l:'b',d:1},{id:'x0',l:'x₀',d:0},{id:'x1',l:'x₁',d:1}],formula:"xₙ = a·xₙ₋₁+b·xₙ₋₂",live:pr=>`${pr.a}·xₙ₋₁+${pr.b}·xₙ₋₂`,desc:"فیبوناچی کلی.",fn:(n,pr)=>{let s=[pr.x0,pr.x1];for(let i=2;i<=n;i++)s.push(pr.a*s[i-1]+pr.b*s[i-2]);return s[n];}},
+  "دنباله کولاتز":{params:[{id:'x0',l:'شروع',d:27}],formula:"زوج÷۲، فرد×۳+۱",live:pr=>`x₀=${pr.x0}`,desc:"حدس کولاتز.",fn:(n,pr)=>{let x=pr.x0,s=[x];while(x!==1&&s.length<=n+1){x=x%2===0?x/2:3*x+1;s.push(x);}return s[n]!==undefined?s[n]:`(گام ${s.length-1}=۱)`;}},
+
+  /* ۱۰ الگوی سوم */
+  "اعداد استرلینگ":{params:[{id:'k',l:'k',d:2}],formula:"S(n,k)=kS(n−1,k)+S(n−1,k−1)",live:pr=>`S(n,${pr.k})`,desc:"تقسیم به k گروه.",fn:(n,pr)=>stirling2(n,pr.k)},
+  "اعداد بل":{formula:"Bₙ = Σ C(n−1,k)Bₖ",live:()=>"Bₙ",desc:"تعداد افرازها.",fn:n=>bellNth(n)},
+  "اعداد برنولی":{formula:"Bₙ = −1/(n+1)ΣC(n+1,k)Bₖ",live:()=>"Bₙ",desc:"بسط تیلور.",fn:n=>{let B=[1];for(let m=1;m<=n;m++){let s=0;for(let k=0;k<m;k++)s+=(fact(m)/(fact(k)*fact(m-k+1)))*B[k];B.push(-s/(m+1));}return +B[n].toFixed(6);}},
+  "دنباله فاکتوریلی":{formula:"aₙ = n!",live:()=>"n!",desc:"حاصل‌ضرب ۱ تا n.",fn:n=>fact(n)},
+  "دنباله ترکیبیاتی":{params:[{id:'k',l:'k',d:3}],formula:"C(n,k)=n!/(k!(n−k)!)",live:pr=>`C(n,${pr.k})`,desc:"انتخاب k از n.",fn:(n,pr)=>fact(n)/(fact(pr.k)*fact(n-pr.k))},
+  "شش‌ضلعی":{formula:"aₙ = n(2n−1)",live:()=>"n(2n−1)",desc:"۱، ۶، ۱۵...",fn:n=>n*(2*n-1)},
+  "اعداد اول":{formula:"فقط بر ۱ و خودش",live:()=>"pₙ",desc:"۲، ۳، ۵...",fn:n=>primeNth(n),type:'nth'},
+  "اعداد مرکب":{formula:"غیر اول و >۱",live:()=>"cₙ",desc:"۴، ۶، ۸...",fn:n=>compositeNth(n),type:'nth'},
+  "اعداد کامل":{formula:"σ(n)−n = n",live:()=>"σ(n)−n=n",desc:"۶، ۲۸، ۴۹۶...",fn:n=>perfectNth(n),type:'nth'},
+  "اعداد فرد":{formula:"aₙ = 2n+1",live:()=>"2n+1",desc:"اعداد فرد.",fn:n=>2*n+1},
+
+  /* ۱۰ الگوی چهارم */
+  "اعداد زوج":{formula:"aₙ = 2n",live:()=>"2n",desc:"اعداد زوج.",fn:n=>2*n},
+  "فاکتوریل":{formula:"aₙ = n!",live:()=>"n!",desc:"فاکتوریل.",fn:n=>fact(n)},
+  "دنباله کاتالان":{formula:"Cₙ=(2n)!/((n+1)!n!)",live:()=>"Cₙ",desc:"درخت‌ها.",fn:n=>fact(2*n)/(fact(n+1)*fact(n))},
+  "پاسکال":{params:[{id:'k',l:'ستون k',d:2}],formula:"C(n,k)=n!/(k!(n−k)!)",live:pr=>`C(n,${pr.k})`,desc:"مثلث پاسکال.",fn:(n,pr)=>fact(n)/(fact(pr.k)*fact(n-pr.k))},
+  "هارمونیک":{formula:"Hₙ = Σ 1/k",live:()=>"1+1/2+...+1/n",desc:"واگرا.",fn:n=>{let s=0;for(let i=1;i<=n;i++)s+=1/i;return +s.toFixed(5);}},
+  "تناوبی":{params:[{id:'period',l:'دوره p',d:3}],formula:"aₙ = (n mod p)+1",live:pr=>`(n mod ${pr.period})+1`,desc:"تکرار هر p.",fn:(n,pr)=>(n%pr.period)+1},
+  "متناوب":{formula:"aₙ = (−1)ⁿ",live:()=>"+،−،+،−",desc:"متناوب.",fn:n=>n%2===0?'+':'-'},
+  "بازگشتی":{params:[{id:'x0',l:'x₀',d:1}],formula:"xₙ = xₙ₋₁+n",live:pr=>`xₙ₋₁+n | x₀=${pr.x0}`,desc:"تفاضل ۱،۲،۳...",fn:(n,pr)=>{let s=pr.x0;for(let i=1;i<=n;i++)s+=i;return s;}},
+  "تکرارشونده":{params:[{id:'digit',l:'رقم',d:7}],formula:"رقم n+1 بار",live:pr=>`«${pr.digit}»`,desc:"۷، ۷۷، ۷۷۷...",fn:(n,pr)=>String(pr.digit).repeat(n+1)},
+  "مارپیچی":{formula:"مرکز=(n²+1)/2",live:()=>"(n²+1)/2",desc:"مارپیچ n×n.",fn:n=>n%2===0?`n=${n} فرد نیست`:Math.floor(n*n/2)+1},
+
+  /* ۱۰ الگوی پنجم */
+  "متقارن":{formula:"1,2,3,...,3,2,1",live:()=>"قرینه",desc:"از وسط قرینه.",fn:n=>Math.ceil(n/2)},
+  "آینه‌ای":{formula:"1,2,3,...,3,2,1",live:()=>"آینه",desc:"نیمه اول آینه دوم.",fn:n=>Math.ceil(n/2)},
+  "کسری":{params:[{id:'num',l:'صورت',d:1},{id:'den',l:'مخرج',d:2}],formula:"(a·n)/(b·n)",live:pr=>`(${pr.num}n)/(${pr.den}n)`,desc:"نسبت ثابت.",fn:(n,pr)=>`${pr.num*(n+1)}/${pr.den*(n+1)}`},
+  "اعشاری":{formula:"ارقام π",live:()=>"π=3.14159...",desc:"π.",fn:n=>Math.PI.toString().slice(0,n+3)},
+  "اعداد خوش‌فرم":{formula:"τ(n)≥۳",live:()=>"≥۳ مقسوم‌علیه",desc:"مرکب.",fn:n=>{if(n<4||isPrime(n))return null;return n;},type:'filter'},
+  "اعداد خودتوصیفی":{formula:"s[i]=count(i)",live:()=>"s[i]=count(i)",desc:"۱۲۱۰، ۲۰۲۰...",fn:n=>isSelfDescriptive(n)?n:null,type:'filter'},
+  "اعداد اسمیت":{formula:"S(n)=S(عوامل)",live:()=>"S(n)=S(factors)",desc:"۲۲، ۲۷، ۵۸...",fn:n=>isSmith(n)?n:null,type:'filter'},
+  "اعداد هارشد":{formula:"n%S(n)=0",live:()=>"n%S(n)=0",desc:"۱، ۲، ۳، ۴...",fn:n=>isHarshad(n)?n:null,type:'filter'},
+  "اعداد کاپرکار":{formula:"n²=x+y",live:()=>"n²=x+y",desc:"۹، ۴۵، ۵۵...",fn:n=>isKaprekar(n)?n:null,type:'filter'},
+  "اعداد آرمسترانگ":{formula:"n=Σd^len",live:()=>"n=Σd^len",desc:"۱۵۳، ۳۷۰...",fn:n=>isArmstrong(n)?n:null,type:'filter'},
+
+  /* ۱۰ الگوی ششم */
+  "اعداد پالین‌درومیک":{formula:"binary palindrome",live:()=>"باینری پالین‌دروم",desc:"۳، ۵، ۷...",fn:n=>{const b=n.toString(2);return b===b.split('').reverse().join('')?n:null;},type:'filter'},
+  "اعداد اول دوقلو":{formula:"p و p+2 اول",live:()=>"(p,p+2)",desc:"(۳،۵)، (۱۱،۱۳)...",fn:n=>twinPrimeNth(n),type:'nth'},
+  "اعداد اول مرسن":{formula:"2ᵖ−1 اول",live:()=>"2ᵖ−1",desc:"۳، ۷، ۳۱...",fn:n=>mersenneNth(n),type:'nth'},
+  "اعداد اول سوفی ژرمن":{formula:"p و 2p+1 اول",live:()=>"p و 2p+1",desc:"۲، ۳، ۵...",fn:n=>sophieNth(n),type:'nth'},
+  "اعداد اول ویلسون":{formula:"(p−1)!≡−1",live:()=>"(p−1)!≡−1",desc:"قضیه ویلسون.",fn:n=>primeNth(n),type:'nth'},
+  "اعداد مجذور کامل":{formula:"aₙ = n²",live:()=>"n²",desc:"۱، ۴، ۹...",fn:n=>(n+1)*(n+1)},
+  "اعداد مکعب کامل":{formula:"aₙ = n³",live:()=>"n³",desc:"۱، ۸، ۲۷...",fn:n=>Math.pow(n+1,3)},
+  "اعداد چهارمین توان":{formula:"aₙ = n⁴",live:()=>"n⁴",desc:"۱، ۱۶، ۸۱...",fn:n=>Math.pow(n+1,4)},
+  "اعداد تتراهدرال":{formula:"Tₙ=n(n+1)(n+2)/6",live:()=>"n(n+1)(n+2)/6",desc:"۱، ۴، ۱۰...",fn:n=>n*(n+1)*(n+2)/6},
+  "اعداد هرمی مربعی":{formula:"n(n+1)(2n+1)/6",live:()=>"n(n+1)(2n+1)/6",desc:"۱، ۵، ۱۴...",fn:n=>n*(n+1)*(2*n+1)/6},
+
+  /* ۱۰ الگوی هفتم */
+  "اعداد هرمی پنج‌ضلعی":{formula:"n²(n+1)/2",live:()=>"n²(n+1)/2",desc:"۱، ۶، ۱۸...",fn:n=>n*n*(n+1)/2},
+  "اعداد چندوجهی":{formula:"n(3n−1)/2",live:()=>"n(3n−1)/2",desc:"۱، ۵، ۱۲...",fn:n=>n*(3*n-1)/2},
+  "دنباله ژاکوبی":{formula:"Jₙ=2^(2ⁿ)+1",live:()=>"2^(2ⁿ)+1",desc:"۳، ۵، ۱۷...",fn:n=>Math.pow(2,Math.pow(2,n))+1},
+  "دنباله پل":{formula:"Bₙ=Bₙ₋₁+Bₙ₋₂+Bₙ₋₃",live:()=>"سه جمله قبل",desc:"۱، ۱، ۲...",fn:n=>{let s=[1,1,2];for(let i=3;i<=n;i++)s.push(s[i-1]+s[i-2]+s[i-3]);return s[n];}},
+  "دنباله پادووان":{formula:"Pₙ=Pₙ₋₂+Pₙ₋₃",live:()=>"Pₙ₋₂+Pₙ₋₃",desc:"۱، ۱، ۱، ۲...",fn:n=>{let s=[1,1,1];for(let i=3;i<=n;i++)s.push(s[i-2]+s[i-3]);return s[n];}},
+  "دنباله پریوین":{formula:"Pₙ=Pₙ₋₂+Pₙ₋₃",live:()=>"Pₙ₋₂+Pₙ₋₃",desc:"۳، ۰، ۲...",fn:n=>{let s=[3,0,2];for(let i=3;i<=n;i++)s.push(s[i-2]+s[i-3]);return s[n];}},
+  "دنباله نارایانا":{formula:"Nₙ=ΣC(n,k)C(n,k+1)/n",live:()=>"کاتالان دوم",desc:"۱، ۱، ۳...",fn:n=>{let s=0;for(let k=0;k<=n;k++)s+=fact(n)/(fact(k)*fact(n-k))*(fact(n)/(fact(k+1)*fact(n-k-1))||0);return s/(n+1);}},
+  "دنباله موتزکین":{formula:"Mₙ=Mₙ₋₁+ΣMᵢMₙ₋₂₋ᵢ",live:()=>"Mₙ",desc:"۱، ۱، ۲، ۴...",fn:n=>{let M=[1,1];for(let i=2;i<=n;i++){let s=M[i-1];for(let j=0;j<i-1;j++)s+=M[j]*M[i-2-j];M.push(s);}return M[n];}},
+  "دنباله شرودر":{formula:"Sₙ=Sₙ₋₁+ΣSᵢSₙ₋₁₋ᵢ",live:()=>"Sₙ",desc:"۱، ۲، ۶...",fn:n=>{let S=[1];for(let i=1;i<=n;i++){let s=S[i-1];for(let j=0;j<i;j++)s+=S[j]*S[i-1-j];S.push(s);}return S[n];}},
+  "دنباله اویلر":{formula:"Eₙ اویلر",live:()=>"Eₙ",desc:"۱، ۱، ۵...",fn:n=>{let E=[1];for(let m=1;m<=n;m++){let s=0;for(let k=0;k<m;k++){let c=fact(m)/(fact(k)*fact(m-k));s+=c*E[k]*(k%2===0?1:-1);}E.push(-s);}return Math.abs(E[n])||0;}},
+
+  /* ۱۰ الگوی هشتم */
+  "دنباله تریبوناچی":{formula:"Tₙ=Tₙ₋₁+Tₙ₋₂+Tₙ₋₃",live:()=>"Tₙ",desc:"۰، ۰، ۱...",fn:n=>{let s=[0,0,1];for(let i=3;i<=n;i++)s.push(s[i-1]+s[i-2]+s[i-3]);return s[n];}},
+  "دنباله تتراناچی":{formula:"Tₙ=Σ۴ جمله قبل",live:()=>"Σ۴ جمله",desc:"۰، ۰، ۰، ۱...",fn:n=>{let s=[0,0,0,1];for(let i=4;i<=n;i++)s.push(s[i-1]+s[i-2]+s[i-3]+s[i-4]);return s[n];}},
+  "دنباله پرونات":{formula:"Pₙ=n(n+1)",live:()=>"n(n+1)",desc:"۲، ۶، ۱۲...",fn:n=>(n+1)*(n+2)},
+  "دنباله سیلوستر":{formula:"Sₙ=Sₙ₋₁²−Sₙ₋₁+1",live:()=>"Sₙ₋₁²−Sₙ₋₁+1",desc:"۲، ۳، ۷...",fn:n=>{let s=2;for(let i=1;i<=n;i++)s=s*s-s+1;return s;}},
+  "دنباله یوزفوس":{formula:"J(n)=2(n−2^⌊log₂n⌋)+1",live:()=>"J(n)",desc:"۱، ۱، ۳...",fn:n=>{if(n===0)return 1;let p=Math.pow(2,Math.floor(Math.log2(n)));return 2*(n-p)+1;}},
+  "دنباله فرکشنال":{formula:"Fₙ=frac(n·φ)",live:()=>"frac(n·φ)",desc:"شبه‌تصادفی.",fn:n=>+(n*1.6180339887%1).toFixed(4)},
+  "دنباله فوق‌هندسی":{formula:"Hₙ=a·rⁿ",live:()=>"a·rⁿ",desc:"نمایی.",fn:n=>Math.pow(2,n)},
+  "دنباله لگاریتمی تناوبی":{formula:"aₙ=log(n mod p+1)",live:()=>"log(n mod p+1)",desc:"ترکیبی.",fn:n=>+Math.log((n%5)+1).toFixed(4)},
+  "دنباله نمایی متناوب":{formula:"aₙ=(−1)ⁿ·2ⁿ",live:()=>"(−1)ⁿ·2ⁿ",desc:"متناوب نمایی.",fn:n=>Math.pow(-1,n)*Math.pow(2,n)},
+  "دنباله توانی کسری":{formula:"aₙ=n^½+n^⅓",live:()=>"√n+∛n",desc:"توان کسری.",fn:n=>+(Math.pow(n,0.5)+Math.pow(n,1/3)).toFixed(4)},
+
+  /* ۱۰ الگوی نهم */
+  "دنباله ریشه‌ای":{formula:"aₙ=√n+√(n+1)",live:()=>"√n+√(n+1)",desc:"رشد آهسته.",fn:n=>+(Math.sqrt(n)+Math.sqrt(n+1)).toFixed(4)},
+  "دنباله معکوس":{formula:"aₙ=1/n",live:()=>"1/n",desc:"میل به صفر.",fn:n=>n===0?0:+(1/n).toFixed(5)},
+  "دنباله متقارن حول مرکز":{formula:"aₙ=|n−N/2|",live:()=>"|n−N/2|",desc:"فاصله از مرکز.",fn:n=>Math.abs(n-10)},
+  "دنباله بلوکی":{formula:"aₙ=⌊n/3⌋+1",live:()=>"⌊n/3⌋+1",desc:"بلوک‌ها.",fn:n=>Math.floor(n/3)+1},
+  "دنباله شطرنجی":{formula:"aₙ=n mod 2",live:()=>"0,1,0,1",desc:"شطرنجی.",fn:n=>n%2},
+  "دنباله زیگزاگی":{formula:"aₙ=n·(−1)ⁿ",live:()=>"n·(−1)ⁿ",desc:"زیگزاگ.",fn:n=>n*Math.pow(-1,n)},
+  "دنباله شبه‌تصادفی":{formula:"Lₙ=(a·Lₙ₋₁+c) mod m",live:()=>"LCG",desc:"مولد شبه‌تصادفی.",fn:n=>{let x=7;for(let i=0;i<=n;i++)x=(1103515245*x+12345)%2147483648;return x%1000;}},
+  "دنباله آشوبی":{formula:"xₙ=3.99·x(1−x)",live:()=>"آشوبی",desc:"نقشه لجستیک.",fn:n=>{let x=0.4;for(let i=1;i<=n;i++)x=3.99*x*(1-x);return +x.toFixed(6);}},
+  "دنباله لجستیک":{formula:"xₙ=r·x(1−x)",live:()=>"xₙ=r·x(1−x)",desc:"نقطه ثابت.",fn:n=>{let x=0.3;for(let i=1;i<=n;i++)x=3.2*x*(1-x);return +x.toFixed(6);}},
+  "دنباله وییرشتراس":{formula:"W(x)=Σaᵏcos(bᵏπx)",live:()=>"وییرشتراس",desc:"همه‌جا مشتق‌ناپذیر.",fn:n=>{let s=0;for(let k=0;k<=n;k++)s+=Math.pow(0.5,k)*Math.cos(Math.pow(3,k)*Math.PI*n);return +s.toFixed(6);}},
+
+  /* ۱۰ الگوی دهم */
+  "دنباله توابع پله‌ای":{formula:"H(n)=0 اگر n<0 وگرنه 1",live:()=>"هویساید",desc:"پله‌ای.",fn:n=>n<0?0:1},
+  "دنباله چندجمله‌ای":{formula:"P(n)=n³−2n²+n+1",live:()=>"n³−2n²+n+1",desc:"چندجمله‌ای.",fn:n=>Math.pow(n,3)-2*n*n+n+1},
+  "دنباله بازگشتی چندمرحله‌ای":{formula:"xₙ=xₙ₋₁+xₙ₋₃",live:()=>"xₙ₋₁+xₙ₋₃",desc:"چندمرحله‌ای.",fn:n=>{let s=[1,1,1];for(let i=3;i<=n;i++)s.push(s[i-1]+s[i-3]);return s[n];}},
+
+  /* ========== ۱۰۰ الگوی جدید ========== */
+  /* اعداد اول خاص (۱-۲۰) */
+  "اعداد اول سه‌قلو":{formula:"(p, p+2, p+6)",live:()=>"سه اول با فاصله ۲ و ۶",desc:"(۵،۷،۱۱)، (۱۱،۱۳،۱۷)...",fn:n=>{let c=0,i=5;while(true){if(isPrime(i)&&isPrime(i+2)&&isPrime(i+6)){if(c===n)return`(${i},${i+2},${i+6})`;c++;}i++;}},type:'nth'},
+  "اعداد اول چهارقلو":{formula:"(p, p+2, p+6, p+8)",live:()=>"چهار اول",desc:"(۵،۷،۱۱،۱۳)...",fn:n=>{let c=0,i=5;while(true){if(isPrime(i)&&isPrime(i+2)&&isPrime(i+6)&&isPrime(i+8)){if(c===n)return`(${i},${i+2},${i+6},${i+8})`;c++;}i++;}},type:'nth'},
+  "اعداد اول ایزنشتاین":{formula:"p≡۲ (mod 3)",live:()=>"p mod 3 = ۲",desc:"۲، ۵، ۱۱...",fn:n=>{let c=0,i=2;while(true){if(isPrime(i)&&i%3===2){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول خوش‌شانس":{formula:"اول ∩ خوش‌شانس",live:()=>"اول و خوش‌شانس",desc:"۳، ۷، ۱۳...",fn:n=>{let L=[];for(let i=1;i<=2000;i++)L.push(i);let step=1;while(step<L.length){let m=L[step];if(!m||m>L.length)break;L=L.filter((_,i)=>(i+1)%m!==0);step++;}let set=new Set(L);let c=0,i=2;while(true){if(isPrime(i)&&set.has(i)){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول چن":{formula:"p اول و p+2 اول یا نیمه‌اول",live:()=>"p و p+2",desc:"۲، ۳، ۵...",fn:n=>{let c=0,i=2;while(true){if(isPrime(i)&&(isPrime(i+2)||primeFactors(i+2).length<=2)){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول امن":{formula:"p و (p−1)/2 اول",live:()=>"p و (p−1)/2",desc:"۵، ۷، ۱۱...",fn:n=>{let c=0,i=2;while(true){if(isPrime(i)&&isPrime((i-1)/2)){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول وایفرایش":{formula:"2^(p−1)≡۱ mod p²",live:()=>"۱۰۹۳، ۳۵۱۱",desc:"دو مورد شناخته‌شده.",fn:n=>[1093,3511][n]||'یافت نشد',type:'nth'},
+  "اعداد اول پالیندروم":{formula:"اول و پالین‌دروم",live:()=>"۲، ۳، ۵، ۷، ۱۱...",desc:"اول و پالین‌دروم.",fn:n=>{let c=0,i=2;while(true){if(isPrime(i)&&isPalindrome(i)){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول دایره‌ای":{formula:"همه چرخش‌ها اول",live:()=>"همه rotations اول",desc:"۲، ۳، ۵، ۷، ۱۱...",fn:n=>{let c=0,i=2;while(true){if(isPrime(i)){let s=String(i),ok=true;for(let j=0;j<s.length;j++){if(!isPrime(+(s.slice(j)+s.slice(0,j)))){ok=false;break;}}if(ok){if(c===n)return i;c++;}}i++;}},type:'nth'},
+  "اعداد اول چرخشی":{formula:"p و reverse(p) اول",live:()=>"p و reverse(p)",desc:"۱۳، ۱۷، ۳۱...",fn:n=>{let c=0,i=13;while(true){if(isPrime(i)&&isPrime(+String(i).split('').reverse().join(''))&&!isPalindrome(i)){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول دوقلوی تعمیم‌یافته":{formula:"(p, p+4) اول",live:()=>"(p, p+4)",desc:"(۳،۷)، (۷،۱۱)...",fn:n=>{let c=0,i=3;while(true){if(isPrime(i)&&isPrime(i+4)){if(c===n)return`(${i},${i+4})`;c++;}i++;}},type:'nth'},
+  "اعداد اول بی‌پایان":{formula:"قضیه اقلیدس",live:()=>"بی‌نهایت",desc:"قضیه اقلیدس.",fn:n=>primeNth(n),type:'nth'},
+  "اعداد نیمه‌اول":{formula:"n=p·q",live:()=>"n=p·q",desc:"۴، ۶، ۹...",fn:n=>{let c=0,i=4;while(true){if(primeFactors(i).length===2){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد شبه‌اول":{formula:"2^(n−1)≡۱ mod n",live:()=>"n مرکب، فرما برقرار",desc:"۳۴۱، ۵۶۱...",fn:n=>{let c=0,i=4;while(true){if(!isPrime(i)&&modPow(2,i-1,i)===1){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد کارمایکل":{formula:"b^(n−1)≡۱ برای همه b",live:()=>"شبه‌اول قوی",desc:"۵۶۱، ۱۱۰۵...",fn:n=>[561,1105,1729,2465,2821,6601,8911,10585,15841][n]||'یافت نشد',type:'nth'},
+  "اعداد لیوویل":{formula:"Σμ(d)/d=0",live:()=>"Σμ(d)/d=0",desc:"۶، ۱۰، ۱۴...",fn:n=>{let c=0,i=6;while(true){if(isLiouville(i)){if(c===n)return i;c++;}i++;if(i>1000)return 'یافت نشد';}},type:'nth'},
+  "اعداد اول گاوسی":{formula:"p≡۳ mod 4",live:()=>"p mod 4=۳",desc:"۳، ۷، ۱۱...",fn:n=>{let c=0,i=2;while(true){if(isPrime(i)&&i%4===3){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول اقلیدسی":{formula:"p₁·p₂···pₙ + 1",live:()=>"حاصل‌ضرب + ۱",desc:"۳، ۷، ۳۱...",fn:n=>{let p=1;for(let i=0;i<=n;i++){let c=0,x=2;while(true){if(isPrime(x)){if(c===i){p*=x;break;}c++;}x++;}}return p+1;}},
+  "اعداد اول نمایشی":{formula:"p=4k+1",live:()=>"p=4k+1",desc:"۵، ۱۳، ۱۷...",fn:n=>{let c=0,i=2;while(true){if(isPrime(i)&&i%4===1){if(c===n)return i;c++;}i++;}},type:'nth'},
+  "اعداد اول چندجمله‌ای":{formula:"n²+n+41",live:()=>"n²+n+41",desc:"چندجمله‌ای اویلر.",fn:n=>{let v=n*n+n+41;return isPrime(v)?v:`${v} (اول نیست)`;}},
+
+  /* فیبوناچی و لوکاس (۲۱-۴۰) */
+  "دنباله فیبوناچی معکوس":{formula:"Fₙ با علامت",live:()=>"(−1)ⁿ⁺¹·Fₙ",desc:"۱، −۱، ۲...",fn:n=>{let f=[0,1];for(let i=2;i<=n;i++)f.push(f[i-1]+f[i-2]);return Math.pow(-1,n+1)*f[n];}},
+  "دنباله فیبوناچی زوج":{formula:"اعضای زوج",live:()=>"Fₙ زوج",desc:"۰، ۲، ۸...",fn:n=>{let c=0,i=0;while(true){let f=fibAt(i);if(f%2===0){if(c===n)return f;c++;}i++;if(i>100)return'یافت نشد';}},type:'nth'},
+  "دنباله فیبوناچی فرد":{formula:"اعضای فرد",live:()=>"Fₙ فرد",desc:"۱، ۱، ۳...",fn:n=>{let c=0,i=1;while(true){let f=fibAt(i);if(f%2===1){if(c===n)return f;c++;}i++;}},type:'nth'},
+  "دنباله فیبوناچی پیمانه‌ای":{params:[{id:'m',l:'پیمانه m',d:10}],formula:"Fₙ mod m",live:pr=>`Fₙ mod ${pr.m}`,desc:"باقیمانده.",fn:(n,pr)=>fibAt(n)%pr.m},
+  "دنباله فیبوناچی تعمیم‌یافته":{params:[{id:'a',l:'a',d:1},{id:'b',l:'b',d:1},{id:'x0',l:'x₀',d:0},{id:'x1',l:'x₁',d:1}],formula:"xₙ=a·xₙ₋₁+b·xₙ₋₂",live:pr=>`${pr.a}·xₙ₋₁+${pr.b}·xₙ₋₂`,desc:"فیبوناچی کلی.",fn:(n,pr)=>{let s=[pr.x0,pr.x1];for(let i=2;i<=n;i++)s.push(pr.a*s[i-1]+pr.b*s[i-2]);return s[n];}},
+  "دنباله لوکاس تعمیم‌یافته":{params:[{id:'a',l:'a',d:1},{id:'b',l:'b',d:1},{id:'x0',l:'L₀',d:2},{id:'x1',l:'L₁',d:1}],formula:"Lₙ=a·Lₙ₋₁+b·Lₙ₋₂",live:pr=>`${pr.a}·Lₙ₋₁+${pr.b}·Lₙ₋₂`,desc:"لوکاس کلی.",fn:(n,pr)=>{let s=[pr.x0,pr.x1];for(let i=2;i<=n;i++)s.push(pr.a*s[i-1]+pr.b*s[i-2]);return s[n];}},
+  "دنباله تریبوناچی معکوس":{formula:"Tₙ با علامت",live:()=>"(−1)ⁿ⁺¹·Tₙ",desc:"تربوناچی علامت‌دار.",fn:n=>{let s=[0,0,1];for(let i=3;i<=n;i++)s.push(s[i-1]+s[i-2]+s[i-3]);return Math.pow(-1,n+1)*s[n];}},
+  "دنباله تریبوناچی زوج":{formula:"اعضای زوج",live:()=>"Tₙ زوج",desc:"۰، ۰، ۴...",fn:n=>{let s=[0,0,1],c=0;for(let i=3;i<150;i++){s.push(s[i-1]+s[i-2]+s[i-3]);if(s[s.length-1]%2===0){if(c===n)return s[s.length-1];c++;}}return'یافت نشد';},type:'nth'},
+  "دنباله پنتاناچی":{formula:"Σ۵ جمله قبل",live:()=>"Σ۵ جمله",desc:"۰×۴، ۱...",fn:n=>{let s=[0,0,0,0,1];for(let i=5;i<=n;i++)s.push(s[i-1]+s[i-2]+s[i-3]+s[i-4]+s[i-5]);return s[n];}},
+  "دنباله هگزاناچی":{formula:"Σ۶ جمله قبل",live:()=>"Σ۶ جمله",desc:"۰×۵، ۱...",fn:n=>{let s=[0,0,0,0,0,1];for(let i=6;i<=n;i++){let t=0;for(let j=1;j<=6;j++)t+=s[i-j];s.push(t);}return s[n];}},
+  "دنباله هپتاناچی":{formula:"Σ۷ جمله قبل",live:()=>"Σ۷ جمله",desc:"۰×۶، ۱...",fn:n=>{let s=[0,0,0,0,0,0,1];for(let i=7;i<=n;i++){let t=0;for(let j=1;j<=7;j++)t+=s[i-j];s.push(t);}return s[n];}},
+  "دنباله اکتاناچی":{formula:"Σ۸ جمله قبل",live:()=>"Σ۸ جمله",desc:"۰×۷، ۱...",fn:n=>{let s=[0,0,0,0,0,0,0,1];for(let i=8;i<=n;i++){let t=0;for(let j=1;j<=8;j++)t+=s[i-j];s.push(t);}return s[n];}},
+  "دنباله نوناچی":{formula:"Σ۹ جمله قبل",live:()=>"Σ۹ جمله",desc:"۰×۸، ۱...",fn:n=>{let s=[0,0,0,0,0,0,0,0,1];for(let i=9;i<=n;i++){let t=0;for(let j=1;j<=9;j++)t+=s[i-j];s.push(t);}return s[n];}},
+  "دنباله دکاناچی":{formula:"Σ۱۰ جمله قبل",live:()=>"Σ۱۰ جمله",desc:"۰×۹، ۱...",fn:n=>{let s=[0,0,0,0,0,0,0,0,0,1];for(let i=10;i<=n;i++){let t=0;for(let j=1;j<=10;j++)t+=s[i-j];s.push(t);}return s[n];}},
+  "دنباله پادووان تعمیم‌یافته":{params:[{id:'a',l:'a',d:1},{id:'b',l:'b',d:1}],formula:"Pₙ=a·Pₙ₋₂+b·Pₙ₋₃",live:pr=>`${pr.a}·Pₙ₋₂+${pr.b}·Pₙ₋₃`,desc:"پادووان کلی.",fn:(n,pr)=>{let s=[1,1,1];for(let i=3;i<=n;i++)s.push(pr.a*s[i-2]+pr.b*s[i-3]);return s[n];}},
+  "دنباله پریوین تعمیم‌یافته":{params:[{id:'a',l:'a',d:1},{id:'b',l:'b',d:1}],formula:"Pₙ=a·Pₙ₋₂+b·Pₙ₋₃",live:pr=>`${pr.a}·Pₙ₋₂+${pr.b}·Pₙ₋₃`,desc:"پریوین کلی.",fn:(n,pr)=>{let s=[3,0,2];for(let i=3;i<=n;i++)s.push(pr.a*s[i-2]+pr.b*s[i-3]);return s[n];}},
+  "دنباله جاکوبستال":{formula:"Jₙ=Jₙ₋₁+2Jₙ₋₂",live:()=>"Jₙ₋₁+2Jₙ₋₂",desc:"۰، ۱، ۱...",fn:n=>{let s=[0,1];for(let i=2;i<=n;i++)s.push(s[i-1]+2*s[i-2]);return s[n];}},
+  "دنباله کیث":{params:[{id:'x0',l:'عدد شروع',d:197}],formula:"مجموع ۳ رقم آخر",live:pr=>`x₀=${pr.x0}`,desc:"اعداد کیث.",fn:(n,pr)=>{let x=pr.x0,s=[x];while(s.length<=n+1){let str=String(x).padStart(3,'0');let last3=str.slice(-3).split('').reduce((a,b)=>a+ +b,0);x+=last3;s.push(x);if(s.length>50)break;}return s[n]!==undefined?s[n]:`گام ${s.length-1}`;}},
+  "دنباله رودی‌ن":{formula:"Rₙ=Rₙ₋₁+Rₙ₋₂",live:()=>"شروع ۱،۳",desc:"۱، ۳، ۴...",fn:n=>{let s=[1,3];for(let i=2;i<=n;i++)s.push(s[i-1]+s[i-2]);return s[n];}},
+  "دنباله خودارجاع":{formula:"a(n)=a(n−a(n−1))+a(n−1−a(n−2))",live:()=>"خودارجاع",desc:"هافستادر.",fn:n=>{let a=[0,1,1];for(let i=3;i<=n;i++){let x=a[i-1],y=a[i-2];a.push(a[x]+a[i-1-y]);}return a[n]||1;}},
+
+  /* مارپیچ و فراکتال (۴۱-۶۰) */
+  "مارپیچ ارشمیدسی":{params:[{id:'a',l:'گام a',d:1}],formula:"r=a+b·θ",live:pr=>`r=${pr.a}+0.1·θ`,desc:"فاصله ثابت.",fn:(n,pr)=>+(pr.a+n*0.1).toFixed(4)},
+  "مارپیچ لگاریتمی":{params:[{id:'a',l:'a',d:0.1},{id:'b',l:'b',d:0.2}],formula:"r=a·e^(b·θ)",live:pr=>`${pr.a}·e^(${pr.b}θ)`,desc:"فاصله هندسی.",fn:(n,pr)=>+(pr.a*Math.exp(pr.b*n)).toFixed(4)},
+  "مارپیچ فیبوناچی":{formula:"r=φ^(θ/(π/2))",live:()=>"φ^(θ/۹۰°)",desc:"مربع‌های فیبوناچی.",fn:n=>+Math.pow(1.6180339887,n/2).toFixed(4)},
+  "مارپیچ طلایی":{formula:"r=φ^(2θ/π)",live:()=>"φ^(2θ/π)",desc:"زاویه ۱۳۷٫۵°.",fn:n=>+Math.pow(1.6180339887,2*n/Math.PI).toFixed(4)},
+  "فراکتال مندل‌برو":{params:[{id:'c1',l:'Re(c)',d:-0.4},{id:'c2',l:'Im(c)',d:0.6}],formula:"z←z²+c",live:pr=>`c=${pr.c1}+${pr.c2}i`,desc:"کراندار یا فرار.",fn:(n,pr)=>{let zr=0,zi=0,cr=pr.c1,ci=pr.c2;for(let i=0;i<n;i++){let nr=zr*zr-zi*zi+cr;let ni=2*zr*zi+ci;zr=nr;zi=ni;if(zr*zr+zi*zi>4)return`فرار در ${i+1}`;}return`|z|=${Math.sqrt(zr*zr+zi*zi).toFixed(4)}`;}},
+  "فراکتال ژولیا":{params:[{id:'z1',l:'Re(z₀)',d:0.3},{id:'z2',l:'Im(z₀)',d:0.5}],formula:"z←z²+c ثابت",live:pr=>`z₀=${pr.z1}+${pr.z2}i`,desc:"c ثابت.",fn:(n,pr)=>{let zr=pr.z1,zi=pr.z2,cr=-0.4,ci=0.6;for(let i=0;i<n;i++){let nr=zr*zr-zi*zi+cr;let ni=2*zr*zi+ci;zr=nr;zi=ni;if(zr*zr+zi*zi>4)return`فرار در ${i+1}`;}return`|z|=${Math.sqrt(zr*zr+zi*zi).toFixed(4)}`;}},
+  "فراکتال کانتور":{formula:"۲ⁿ قطعه",live:()=>"۲ⁿ",desc:"حذف وسط.",fn:n=>Math.pow(2,n)},
+  "فراکتال سیرپینسکی":{formula:"۳ⁿ مثلث",live:()=>"۳ⁿ",desc:"مثلث سیرپینسکی.",fn:n=>Math.pow(3,n)},
+  "فراکتال سه‌بعدی":{formula:"۲۰ⁿ مکعب",live:()=>"۲۰ⁿ",desc:"اسفنج منگر.",fn:n=>Math.pow(20,n)},
+  "منحنی پئانو":{formula:"۴ⁿ قطعه",live:()=>"۴ⁿ",desc:"فضاپرکننده.",fn:n=>Math.pow(4,n)},
+  "منحنی هیلبرت":{formula:"۴ⁿ قطعه",live:()=>"۴ⁿ",desc:"پئانو پیوسته.",fn:n=>Math.pow(4,n)},
+  "منحنی کخ":{formula:"۴ⁿ قطعه",live:()=>"۴ⁿ",desc:"برفدانه.",fn:n=>Math.pow(4,n)},
+  "منحنی دراگون":{formula:"۲ⁿ قطعه",live:()=>"۲ⁿ",desc:"تا کردن کاغذ.",fn:n=>Math.pow(2,n)},
+  "برف‌دانه کخ":{formula:"۳·(۴/۳)ⁿ",live:()=>"محیط نامتناهی",desc:"محیط رشد می‌کند.",fn:n=>+(3*Math.pow(4/3,n)).toFixed(4)},
+  "مثلث سیرپینسکی":{formula:"(۳/۴)ⁿ",live:()=>"مساحت→۰",desc:"مساحت صفر.",fn:n=>+Math.pow(3/4,n).toFixed(4)},
+  "فرش سیرپینسکی":{formula:"(۸/۹)ⁿ",live:()=>"(۸/۹)ⁿ",desc:"مساحت صفر.",fn:n=>+Math.pow(8/9,n).toFixed(4)},
+  "اسفنج منگر":{formula:"(۲۰/۲۷)ⁿ",live:()=>"(۲۰/۲۷)ⁿ",desc:"حجم صفر.",fn:n=>+Math.pow(20/27,n).toFixed(4)},
+  "درخت فراکتالی":{formula:"۲ⁿ شاخه",live:()=>"۲ⁿ",desc:"دودویی.",fn:n=>Math.pow(2,n)},
+  "تکرار چندضلعی":{formula:"۳·۲ⁿ رأس",live:()=>"۳·۲ⁿ",desc:"دو برابر شدن.",fn:n=>3*Math.pow(2,n)},
+  "کاشی‌کاری پنروز":{formula:"φⁿ",live:()=>"φ=۱٫۶۱۸...",desc:"نسبت طلایی.",fn:n=>+Math.pow(1.6180339887,n).toFixed(4)},
+
+  /* ترکیبیات (۶۱-۸۰) */
+  "ضرایب دوجمله‌ای":{params:[{id:'k',l:'k',d:3}],formula:"C(n,k)",live:pr=>`C(n,${pr.k})`,desc:"ضریب دو جمله‌ای.",fn:(n,pr)=>fact(n)/(fact(pr.k)*fact(n-pr.k))},
+  "ضرایب چندجمله‌ای":{params:[{id:'k',l:'k',d:3}],formula:"n!/(k!(n−k)!)",live:pr=>`n!/(${pr.k}!(n−${pr.k})!)`,desc:"ضریب چندجمله‌ای.",fn:(n,pr)=>fact(n)/(fact(pr.k)*fact(n-pr.k))},
+  "اعداد استرلینگ نوع اول":{params:[{id:'k',l:'k',d:3}],formula:"s(n,k) بازگشتی",live:pr=>`s(n,${pr.k})`,desc:"جایگشت با k دور.",fn:(n,pr)=>stirling1(n,pr.k)},
+  "اعداد استرلینگ نوع دوم":{params:[{id:'k',l:'k',d:2}],formula:"S(n,k)",live:pr=>`S(n,${pr.k})`,desc:"تقسیم به k گروه.",fn:(n,pr)=>stirling2(n,pr.k)},
+  "اعداد بل مثلثی":{formula:"Bₙ=ΣS(n,k)",live:()=>"ΣS(n,k)",desc:"مجموع استرلینگ.",fn:n=>{let s=0;for(let k=0;k<=n;k++)s+=stirling2(n,k)||0;return s;}},
+  "اعداد کاتالان تعمیم‌یافته":{params:[{id:'p',l:'p',d:2}],formula:"(pn)!/((n+1)!(n!)^p)",live:pr=>`C(n,${pr.p})`,desc:"Fuss-Catalan.",fn:(n,pr)=>fact(pr.p*n)/(fact(n+1)*Math.pow(fact(n),pr.p))},
+  "اعداد نارایانا تعمیم‌یافته":{params:[{id:'p',l:'p',d:2}],formula:"N(n,p)",live:pr=>`N(n,${pr.p})`,desc:"نارایانا کلی.",fn:(n,pr)=>{let a=fact(n)/(fact(pr.p)*fact(n-pr.p));let b=fact(n)/(fact(pr.p+1)*fact(n-pr.p-1)||1);return (a*b/n)||0;}},
+  "اعداد موتزکین تعمیم‌یافته":{params:[{id:'r',l:'r',d:2}],formula:"((2r+1)Mₙ₋₁+(3r−1)Mₙ₋₂)/(r+2)",live:pr=>`Mₙ(${pr.r})`,desc:"موتزکین کلی.",fn:(n,pr)=>{let M=[1,1];for(let i=2;i<=n;i++)M.push(((2*pr.r+1)*M[i-1]+(3*pr.r-1)*M[i-2])/(pr.r+2));return +M[n].toFixed(4);}},
+  "اعداد شرودر بزرگ":{formula:"Sₙ=Sₙ₋₁+ΣSᵢSₙ₋₁₋ᵢ",live:()=>"شرودر بزرگ",desc:"۱، ۲، ۶...",fn:n=>{let S=[1];for(let i=1;i<=n;i++){let s=S[i-1];for(let j=0;j<i;j++)s+=S[j]*S[i-1-j];S.push(s);}return S[n];}},
+  "اعداد شرودر کوچک":{formula:"sₙ=sₙ₋₁+2Σsᵢsₙ₋₁₋ᵢ",live:()=>"شرودر کوچک",desc:"۱، ۱، ۳...",fn:n=>{let S=[1,1];for(let i=2;i<=n;i++){let s=S[i-1];for(let j=0;j<i-1;j++)s+=2*S[j]*S[i-2-j];S.push(s);}return S[n];}},
+  "اعداد فاکتوریل نزولی":{formula:"n!/(n−k)!",live:()=>"فاکتوریل نزولی",desc:"حاصل‌ضرب نزولی.",fn:n=>fact(n)},
+  "اعداد فاکتوریل صعودی":{formula:"x^(n)=x(x+1)...(x+n−1)",live:()=>"فاکتوریل صعودی",desc:"حاصل‌ضرب صعودی.",fn:n=>{let r=1;for(let i=0;i<n;i++)r*=(1+i);return r;}},
+  "جایگشت‌های دوری":{formula:"(n−1)!",live:()=>"(n−1)!",desc:"جایگشت دوری.",fn:n=>n===0?1:fact(n-1)},
+  "جایگشت‌های زوج":{formula:"n!/۲",live:()=>"n!/۲",desc:"نصف جایگشت‌ها.",fn:n=>fact(n)/2},
+  "جایگشت‌های فرد":{formula:"n!/۲",live:()=>"n!/۲",desc:"نصف جایگشت‌ها.",fn:n=>fact(n)/2},
+  "ترکیب‌های محدود":{params:[{id:'k',l:'k',d:3}],formula:"C(n,k) با k≤n",live:pr=>`C(n,${pr.k})`,desc:"ترکیب محدود.",fn:(n,pr)=>n<pr.k?0:fact(n)/(fact(pr.k)*fact(n-pr.k))},
+  "افراز صحیح":{formula:"p(n) اویلر",live:()=>"p(n)",desc:"تعداد افراز.",fn:n=>{let p=[1];for(let i=1;i<=n;i++){let s=0,k=1;while(true){let g1=k*(3*k-1)/2,g2=k*(3*k+1)/2;if(g1>i&&g2>i)break;if(g1<=i)s+=Math.pow(-1,k-1)*p[i-g1];if(g2<=i)s+=Math.pow(-1,k-1)*p[i-g2];k++;}p.push(s);}return p[n];}},
+  "افراز عددی":{formula:"p(n)",live:()=>"p(n)",desc:"افراز عددی.",fn:n=>{let p=[1];for(let i=1;i<=n;i++){let s=0,k=1;while(true){let g1=k*(3*k-1)/2,g2=k*(3*k+1)/2;if(g1>i&&g2>i)break;if(g1<=i)s+=Math.pow(-1,k-1)*p[i-g1];if(g2<=i)s+=Math.pow(-1,k-1)*p[i-g2];k++;}p.push(s);}return p[n];}},
+  "افراز متمایز":{formula:"q(n)",live:()=>"q(n)",desc:"افراز متمایز.",fn:n=>{let q=[1];for(let i=1;i<=n;i++){let s=0,k=1;while(true){let g1=k*(3*k-1)/2,g2=k*(3*k+1)/2;if(g1>i&&g2>i)break;if(g1<=i)s+=Math.pow(-1,k-1)*q[i-g1];if(g2<=i)s+=Math.pow(-1,k-1)*q[i-g2];k++;}q.push(s);}return q[n];}},
+  "افراز محدود":{params:[{id:'max',l:'حداکثر جزء',d:3}],formula:"p(n,≤max)",live:pr=>`p(n,≤${pr.max})`,desc:"افراز با شرط.",fn:(n,pr)=>{let dp=Array(n+1).fill(0);dp[0]=1;for(let k=1;k<=pr.max;k++)for(let i=k;i<=n;i++)dp[i]+=dp[i-k];return dp[n];}},
+
+  /* توابع (۸۱-۱۰۰) */
+  "تابع درجه چهار":{formula:"f(n)=n⁴",live:()=>"n⁴",desc:"چهارمین توان.",fn:n=>Math.pow(n,4)},
+  "تابع درجه پنج":{formula:"f(n)=n⁵",live:()=>"n⁵",desc:"پنجمین توان.",fn:n=>Math.pow(n,5)},
+  "تابع درجه شش":{formula:"f(n)=n⁶",live:()=>"n⁶",desc:"ششمین توان.",fn:n=>Math.pow(n,6)},
+  "تابع درجه هفت":{formula:"f(n)=n⁷",live:()=>"n⁷",desc:"هفتمین توان.",fn:n=>Math.pow(n,7)},
+  "تابع درجه هشت":{formula:"f(n)=n⁸",live:()=>"n⁸",desc:"هشتمین توان.",fn:n=>Math.pow(n,8)},
+  "تابع درجه نه":{formula:"f(n)=n⁹",live:()=>"n⁹",desc:"نهمین توان.",fn:n=>Math.pow(n,9)},
+  "تابع درجه ده":{formula:"f(n)=n¹⁰",live:()=>"n¹⁰",desc:"دهمین توان.",fn:n=>Math.pow(n,10)},
+  "تابع چندجمله‌ای متقارن":{formula:"f(n)=n²+(−n)²",live:()=>"2n²",desc:"متقارن.",fn:n=>2*n*n},
+  "تابع چندجمله‌ای فرد":{formula:"f(n)=n³+n",live:()=>"n³+n",desc:"فرد.",fn:n=>Math.pow(n,3)+n},
+  "تابع چندجمله‌ای زوج":{formula:"f(n)=n⁴+n²",live:()=>"n⁴+n²",desc:"زوج.",fn:n=>Math.pow(n,4)+n*n},
+  "تابع گویا":{params:[{id:'num',l:'صورت',d:1},{id:'den',l:'مخرج',d:2}],formula:"f(n)=num/n+den",live:pr=>`${pr.num}/n+${pr.den}`,desc:"گویا.",fn:(n,pr)=>n===0?pr.den:+(pr.num/n+pr.den).toFixed(4)},
+  "تابع گنگ":{formula:"f(n)=√(n²+1)",live:()=>"√(n²+1)",desc:"گنگ.",fn:n=>+Math.sqrt(n*n+1).toFixed(4)},
+  "تابع پله‌ای متناوب":{formula:"f(n)=n mod 2",live:()=>"n mod 2",desc:"پله‌ای.",fn:n=>n%2},
+  "تابع جزءصحیح":{formula:"f(n)=⌊n/2⌋",live:()=>"⌊n/2⌋",desc:"جزء صحیح.",fn:n=>Math.floor(n/2)},
+  "تابع جزءاعشاری":{formula:"{n/φ}",live:()=>"{n/φ}",desc:"بخش اعشاری.",fn:n=>+(n/1.6180339887%1).toFixed(4)},
+  "تابع علامت":{formula:"sgn(n)",live:()=>"sgn(n)",desc:"علامت.",fn:n=>Math.sign(n)},
+  "تابع هویساید":{formula:"H(n)=0 اگر n<0 وگرنه 1",live:()=>"H(n)",desc:"هویساید.",fn:n=>n<0?0:1},
+  "تابع دلتای دیراک":{formula:"δ(n)=1 اگر n=0 وگرنه 0",live:()=>"δ(n)",desc:"دلتا.",fn:n=>n===0?1:0},
+  "تابع گوسی":{params:[{id:'mu',l:'μ',d:0},{id:'sigma',l:'σ',d:1}],formula:"e^(−(n−μ)²/(2σ²))",live:pr=>`μ=${pr.mu}، σ=${pr.sigma}`,desc:"گوسی.",fn:(n,pr)=>+Math.exp(-Math.pow(n-pr.mu,2)/(2*pr.sigma*pr.sigma)).toFixed(6)},
+  "تابع زتا":{formula:"ζ(n)=Σ 1/kⁿ",live:()=>"Σ1/kⁿ",desc:"زتای ریمان.",fn:n=>{if(n<=1)return'واگرا';let s=0;for(let k=1;k<=1000;k++)s+=Math.pow(k,-n);return +s.toFixed(6);}}
+};
+
+/* ========== توابع کمکی جدید ========== */
+function modPow(b,e,m){let r=1n,bb=BigInt(b)%BigInt(m),ee=BigInt(e),mm=BigInt(m);while(ee>0n){if(ee&1n)r=r*bb%mm;bb=bb*bb%mm;ee>>=1n;}return Number(r);}
+function stirling1(n,k){if(n>50)return 'بزرگ';let S=Array.from({length:n+1},()=>Array(k+1).fill(0));S[0][0]=1;for(let i=1;i<=n;i++)for(let j=1;j<=Math.min(i,k);j++)S[i][j]=S[i-1][j-1]+(i-1)*S[i-1][j];return S[n][k];}
+function isLiouville(n){const f=primeFactors(n);let sign=1;let tmp=n;for(let p of new Set(f)){let cnt=0;while(tmp%p===0){tmp/=p;cnt++;}sign*=Math.pow(-1,cnt);}return sign===-1;}
+
+/* ========== ساخت فهرست ========== */
+const grid = document.getElementById('listGrid');
+const allNames = Object.keys(patterns);
+let filteredNames = [...allNames];
+
+function renderList(){
+  grid.innerHTML = '';
+  if(filteredNames.length===0){
+    grid.innerHTML = '<div style="color:#94a3b8;padding:15px;grid-column:span 2;text-align:center;">الگویی یافت نشد</div>';
+    return;
+  }
+  filteredNames.forEach(name=>{
+    const d = document.createElement('div');
+    d.className='item'; d.textContent=name;
+    d.onclick = ()=> openCalc(name);
+    grid.appendChild(d);
+  });
+}
+function filterList(){
+  const q = document.getElementById('searchBox').value.trim();
+  filteredNames = q ? allNames.filter(n=>n.includes(q)) : [...allNames];
+  renderList();
+}
+renderList();
+
+let currentPattern = null;
+
+function openCalc(name){
+  currentPattern = name;
+  document.getElementById('listPage').classList.remove('active');
+  document.getElementById('calcPage').classList.add('active');
+  document.getElementById('calcTitle').textContent = '🧮 ' + name;
+  const pat = patterns[name];
+  document.getElementById('formulaBox').innerHTML = '<div class="title">📐 فرمول</div>' + pat.formula;
+  document.getElementById('descBox').innerHTML = '<div class="head">🔗 رابطه بین اعداد</div>' + pat.desc;
+  const box = document.getElementById('params'); box.innerHTML='';
+  if(pat.params) pat.params.forEach(p=>{
+    const l=document.createElement('label'); l.textContent=p.l;
+    const i=document.createElement('input'); i.type='number';
+    i.id='p_'+p.id; i.value=p.d; i.oninput=updateLive;
+    box.appendChild(l); box.appendChild(i);
+  });
+  document.getElementById('nth').value = 5;
+  document.getElementById('infoBox').classList.remove('open');
+  document.getElementById('toggleBtn').textContent = 'ℹ️ اطلاعات بیشتر';
+  updateLive();
+  document.getElementById('output').textContent = 'مقادیر را وارد کرده و محاسبه کنید...';
+}
+
+function toggleInfo(){
+  const box = document.getElementById('infoBox');
+  const btn = document.getElementById('toggleBtn');
+  const isOpen = box.classList.toggle('open');
+  btn.textContent = isOpen ? '✖️ بستن اطلاعات' : 'ℹ️ اطلاعات بیشتر';
+}
+
+function goBack(){
+  document.getElementById('calcPage').classList.remove('active');
+  document.getElementById('listPage').classList.add('active');
+}
+
+function gatherParams(){
+  const pat = patterns[currentPattern];
+  const pr = {};
+  if(pat.params) pat.params.forEach(p=>{
+    const el = document.getElementById('p_'+p.id);
+    if(el) pr[p.id] = parseFloat(el.value);
+  });
+  return pr;
+}
+
+function updateLive(){
+  if(!currentPattern) return;
+  const pat = patterns[currentPattern];
+  if(!pat.live) return;
+  try{
+    const pr = gatherParams();
+    document.getElementById('liveFormula').innerHTML =
+      '🔎 با مقادیر شما: <b style="color:#38bdf8;">' + pat.live(pr) + '</b>';
+  } catch(e){}
+}
+
+function calc(){
+  const name = currentPattern;
+  const pat = patterns[name];
+  const n = parseInt(document.getElementById('nth').value);
+  if(isNaN(n)||n<0){ show('<span class="err">n باید عددی نامنفی باشد</span>'); return; }
+  const pr = gatherParams();
+  try{
+    let val;
+    if(pat.type==='nth'){ val = pat.fn(n, pr); }
+    else if(pat.type==='filter'){
+      let count=-1;
+      for(let i=0;i<1e6;i++){
+        let r = pat.fn(i, pr);
+        if(r!==null){ count++; if(count===n){ val=r; break; } }
+      }
+      if(val===undefined) val='یافت نشد';
+    } else { val = pat.fn(n, pr); }
+    show(
+      '<div class="big">جمله '+n+'ام = '+(typeof val==='number'? (+val.toFixed(6)) : val)+'</div>'+
+      '<div class="info">الگو: '+name+' | n='+n+'</div>'
+    );
+  } catch(e){
+    show('<span class="err">خطا: '+e.message+'</span>');
+  }
+}
+function show(h){ document.getElementById('output').innerHTML = h; }
+</script>
+</body>
+</html>
